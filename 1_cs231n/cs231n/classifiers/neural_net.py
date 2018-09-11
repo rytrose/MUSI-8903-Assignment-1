@@ -197,7 +197,7 @@ def two_layer_net(X, model, y=None, reg=0.0):
 
   # backprop from second layer
   dh1 = dscores.dot(W2.T)
-  dh1[h1_activation <= 0] = 0
+  dh1[h1_activation <= 0] = 0 # ????
 
   # backprop h1 = X.dot(W1) + b1
   dW1 = X.T.dot(dh1)
@@ -208,14 +208,13 @@ def two_layer_net(X, model, y=None, reg=0.0):
   dW2 += reg * W2
 
   # store gradients
-  grads['W1'] = dW1
-  grads['b1'] = db1
-  grads['W2'] = dW2
-  grads['b2'] = db2
+  grads['W1'] = np.squeeze(dW1)
+  grads['b1'] = np.squeeze(db1)
+  grads['W2'] = np.squeeze(dW2)
+  grads['b2'] = np.squeeze(db2)
 
   #############################################################################
   #                              END OF YOUR CODE                             #
   #############################################################################
 
   return loss, grads
-

@@ -20,7 +20,9 @@ class TwoLayerNN(nn.Module):
         #############################################################################
         # TODO: Initialize anything you need for the forward pass
         #############################################################################
-        pass
+        self.fc1 = nn.Linear(np.prod(im_size), hidden_dim)
+        self.fc2 = nn.Linear(hidden_dim, n_classes)
+        self.softmax = nn.Softmax()
         #############################################################################
         #                             END OF YOUR CODE                              #
         #############################################################################
@@ -45,7 +47,9 @@ class TwoLayerNN(nn.Module):
         #############################################################################
         # TODO: Implement the forward pass. This should take very few lines of code.
         #############################################################################
-        pass
+        x = images.view(-1, np.prod(images.size()[1:])) 
+        fc1_out = F.relu(self.fc1(x))
+        scores = self.fc2(fc1_out)
         #############################################################################
         #                             END OF YOUR CODE                              #
         #############################################################################
