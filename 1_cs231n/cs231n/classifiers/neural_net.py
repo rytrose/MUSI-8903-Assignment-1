@@ -208,10 +208,10 @@ def two_layer_net(X, model, y=None, reg=0.0):
   dW2 += reg * W2
 
   # store gradients
-  grads['W1'] = dW1
-  grads['b1'] = db1
-  grads['W2'] = dW2
-  grads['b2'] = db2
+  grads['W1'] = np.squeeze(dW1)
+  grads['b1'] = np.squeeze(db1)
+  grads['W2'] = np.squeeze(dW2)
+  grads['b2'] = np.squeeze(db2)
 
   #############################################################################
   #                              END OF YOUR CODE                             #
