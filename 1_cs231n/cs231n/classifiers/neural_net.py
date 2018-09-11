@@ -104,8 +104,9 @@ def two_layer_net(X, model, y=None, reg=0.0):
   # h2 = h1_1.dot(W2b2)
 
   # Succinct way
-  h1 = ReLU(X.dot(W1) + b1)
-  h2 = h1.dot(W2) + b2
+  h1 = X.dot(W1) + b1
+  h1_activation = ReLU(h1)
+  h2 = h1_activation.dot(W2) + b2
 
   # Scores are the output of the second layer without activation
   scores = h2
@@ -128,26 +129,48 @@ def two_layer_net(X, model, y=None, reg=0.0):
   # regularization loss by 0.5                                                #
   #############################################################################
 
-  # Define softmax_loss
-  def softmax_loss(scores, y):
-    # Avoid numeric instability
-    scores -= np.max(scores)
+  ############
+  # Data Loss
+  ############
+  # Avoid numeric instability
+  scores -= np.max(scores)
 
-    # Compute f_yi
-    f_yi = scores[np.arange(scores.shape[0]), y]
+  # Compute unnormalized probabilities
+  exp_scores = np.exp(scores)
 
-    # Compute softmax from definition
-    softmax = np.exp(f_yi) / np.sum(np.exp(scores), axis=1)
+  # Compute the normalized probabilities
+  normalized_probs = exp_scores / np.sum(exp_scores, axis=1, keepdims=True)
 
-    # Return loss
-    return -np.log(softmax)
+  # Cross-entropy loss is the log probabilities of the correct class
+  log_probs = -np.log(normalized_probs[np.arange(N), y])
 
-  # Define L2 loss
-  L2 = lambda x: np.sum(np.sum(np.square(x), axis=1), axis=0)
+  # Average probabilities to get final data loss
+  data_loss = np.average(log_probs)
 
-  data_loss = np.average(softmax_loss(scores, y))
-  regularization_loss = reg * (L2(W1) + L2(W2))
+  ######################
+  # Regularization Loss
+  ######################
+  # Square weights
+  W1_squared = np.square(W1)
+  W2_squared = np.square(W2)
 
+  # Sum across first dimension
+  W1_sum = np.sum(W1_squared, axis=1)
+  W2_sum = np.sum(W2_squared, axis=1)
+
+  # Sum across second dimension yields L2 regularization
+  W1_L2 = np.sum(W1_sum, axis=0)
+  W2_L2 = np.sum(W2_sum, axis=0)
+
+  # Sum L2 regularization for both weights
+  L2_regularization = W1_L2 + W2_L2
+
+  # Multiply by lambda
+  regularization_loss = reg * L2_regularization
+
+  #############
+  # Final Loss
+  #############
   loss = data_loss + (regularization_loss * 0.5)
 
   #############################################################################
@@ -156,12 +179,40 @@ def two_layer_net(X, model, y=None, reg=0.0):
 
   # compute the gradients
   grads = {}
+
   #############################################################################
   # TODO: Compute the backward pass, computing the derivatives of the weights #
   # and biases. Store the results in the grads dictionary. For example,       #
   # grads['W1'] should store the gradient on W1, and be a matrix of same size #
   #############################################################################
-  pass
+
+  # backprop softmax (see http://cs231n.github.io/neural-networks-case-study/)
+  dscores = normalized_probs
+  dscores[np.arange(N), y] -= 1
+  dscores /= N
+
+  # backprop scores (h2) = h1_activation.dot(W2) + b2
+  dW2 = h1_activation.T.dot(dscores)
+  db2 = np.sum(dscores, axis=0, keepdims=True)
+
+  # backprop from second layer
+  dh1 = dscores.dot(W2.T)
+  dh1[h1_activation <= 0] = 0
+
+  # backprop h1 = X.dot(W1) + b1
+  dW1 = X.T.dot(dh1)
+  db1 = np.sum(dh1, axis=0, keepdims=True)
+
+  # regularization loss backprop
+  dW1 += reg * W1
+  dW2 += reg * W2
+
+  # store gradients
+  grads['W1'] = dW1
+  grads['b1'] = db1
+  grads['W2'] = dW2
+  grads['b2'] = db2
+
   #############################################################################
   #                              END OF YOUR CODE                             #
   #############################################################################
