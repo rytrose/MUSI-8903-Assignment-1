@@ -197,7 +197,7 @@ def two_layer_net(X, model, y=None, reg=0.0):
 
   # backprop from second layer
   dh1 = dscores.dot(W2.T)
-  dh1[h1_activation <= 0] = 0
+  dh1[h1_activation <= 0] = 0 # ????
 
   # backprop h1 = X.dot(W1) + b1
   dW1 = X.T.dot(dh1)
@@ -218,4 +218,3 @@ def two_layer_net(X, model, y=None, reg=0.0):
   #############################################################################
 
   return loss, grads
-

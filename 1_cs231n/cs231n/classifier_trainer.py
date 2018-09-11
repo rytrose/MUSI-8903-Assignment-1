@@ -66,6 +66,7 @@ class ClassifierTrainer(object):
     loss_history = []
     train_acc_history = []
     val_acc_history = []
+
     for it in range(num_iters):
       if it % 10 == 0:  print('starting iteration ', it)
 
@@ -88,6 +89,7 @@ class ClassifierTrainer(object):
         # compute the parameter step
         if update == 'sgd':
           dx = -learning_rate * grads[p]
+          # dx = np.squeeze(dx)
         elif update == 'momentum':
           if not p in self.step_cache: 
             self.step_cache[p] = np.zeros(grads[p].shape)
@@ -100,7 +102,7 @@ class ClassifierTrainer(object):
 
           self.step_cache[p] = momentum * self.step_cache[p] - learning_rate * grads[p]
           dx = self.step_cache[p]
-
+          
           #####################################################################
           #                      END OF YOUR CODE                             #
           #####################################################################

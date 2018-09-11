@@ -14,8 +14,8 @@ from cifar10 import CIFAR10
 # You should implement these (softmax.py, twolayernn.py, convnet.py)
 import models.softmax 
 import models.twolayernn
-import models.convnet
-import models.mymodel
+# import models.convnet
+# import models.mymodel
 
 # Training settings
 parser = argparse.ArgumentParser(description='CIFAR-10 Example')
@@ -30,8 +30,7 @@ parser.add_argument('--batch-size', type=int, metavar='N',
                     help='input batch size for training')
 parser.add_argument('--epochs', type=int, metavar='N',
                     help='number of epochs to train')
-parser.add_argument('--model',
-                    choices=['softmax', 'convnet', 'twolayernn', 'mymodel'],
+parser.add_argument('--model', choices=['softmax', 'twolayernn'], default="twolayernn",
                     help='which model to train/evaluate')
 parser.add_argument('--hidden-dim', type=int,
                     help='number of hidden features/activations')
@@ -91,12 +90,12 @@ if args.model == 'softmax':
     model = models.softmax.Softmax(im_size, n_classes)
 elif args.model == 'twolayernn':
     model = models.twolayernn.TwoLayerNN(im_size, args.hidden_dim, n_classes)
-elif args.model == 'convnet':
-    model = models.convnet.CNN(im_size, args.hidden_dim, args.kernel_size,
-                               n_classes)
-elif args.model == 'mymodel':
-    model = models.mymodel.MyModel(im_size, args.hidden_dim,
-                               args.kernel_size, n_classes)
+# elif args.model == 'convnet':
+#     model = models.convnet.CNN(im_size, args.hidden_dim, args.kernel_size,
+#                                n_classes)
+# elif args.model == 'mymodel':
+#     model = models.mymodel.MyModel(im_size, args.hidden_dim,
+#                                args.kernel_size, n_classes)
 else:
     raise Exception('Unknown model {}'.format(args.model))
 # cross-entropy loss function
@@ -108,7 +107,9 @@ if args.cuda:
 # TODO: Initialize an optimizer from the torch.optim package using the
 # appropriate hyperparameters found in args. This only requires one line.
 #############################################################################
-pass
+params = model.parameters()
+optimizer = optim.Adam(params, lr=args.lr, weight_decay=args.weight_decay)
+loss_fn = nn.CrossEntropyLoss()
 #############################################################################
 #                             END OF YOUR CODE                              #
 #############################################################################
@@ -122,28 +123,36 @@ def train(epoch):
     # (as opposed to eval mode) so it knows which one to use.
     model.train()
     # train loop
-    for batch_idx, batch in enumerate(train_loader):
-        # prepare data
-        images, targets = Variable(batch[0]), Variable(batch[1])
-        if args.cuda:
-            images, targets = images.cuda(), targets.cuda()
-        #############################################################################
-        # TODO: Update the parameters in model using the optimizer from above.
-        # This only requires a couple lines of code.
-        #############################################################################
-        pass
-        #############################################################################
-        #                             END OF YOUR CODE                              #
-        #############################################################################
-        if batch_idx % args.log_interval == 0:
-            val_loss, val_acc = evaluate('val', n_batches=4)
-            train_loss = loss.data[0]
-            examples_this_epoch = batch_idx * len(images)
-            epoch_progress = 100. * batch_idx / len(train_loader)
-            print('Train Epoch: {} [{}/{} ({:.0f}%)]\t'
-                  'Train Loss: {:.6f}\tVal Loss: {:.6f}\tVal Acc: {}'.format(
-                epoch, examples_this_epoch, len(train_loader.dataset),
-                epoch_progress, train_loss, val_loss, val_acc))
+    for _ in range(epoch):
+        for batch_idx, batch in enumerate(train_loader):
+            # prepare data
+            images, targets = Variable(batch[0]), Variable(batch[1])
+            if args.cuda:
+                images, targets = images.cuda(), targets.cuda()
+            #############################################################################
+            # TODO: Update the parameters in model using the optimizer from above.
+            # This only requires a couple lines of code.
+            #############################################################################
+            # zero the parameter gradients
+            optimizer.zero_grad()
+            # forward pass
+            output = model(images)
+            # backward + optimize
+            loss = loss_fn(output, targets)
+            loss.backward()
+            optimizer.step()
+            #############################################################################
+            #                             END OF YOUR CODE                              #
+            #############################################################################
+            if batch_idx % args.log_interval == 0:
+                val_loss, val_acc = evaluate('val', n_batches=4)
+                train_loss = loss.data[0]
+                examples_this_epoch = batch_idx * len(images)
+                epoch_progress = 100. * batch_idx / len(train_loader)
+                print('Train Epoch: {} [{}/{} ({:.0f}%)]\t'
+                      'Train Loss: {:.6f}\tVal Loss: {:.6f}\tVal Acc: {}'.format(
+                    epoch, examples_this_epoch, len(train_loader.dataset),
+                    epoch_progress, train_loss, val_loss, val_acc))
 
 def evaluate(split, verbose=False, n_batches=None):
     '''
